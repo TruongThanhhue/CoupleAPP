@@ -1,0 +1,11 @@
+analyzer:
+  errors:
+    avoid_print: warning
+  exclude:
+    - build/**
+    - android/**
+linter:
+  rules:
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - use_super_parameters

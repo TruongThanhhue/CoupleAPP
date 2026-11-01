@@ -1,0 +1,26 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Local tool and package caches
+.tooling/
+.dart_tool/
+.packages
+
+# Flutter and Dart build output
+mobile/couple_app/build/
+mobile/couple_app/.flutter-plugins
+mobile/couple_app/.flutter-plugins-dependencies
+
+# .NET build output
+**/bin/
+**/obj/
+
+# IDE and OS files
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
