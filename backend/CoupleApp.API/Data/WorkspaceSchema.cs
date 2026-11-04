@@ -7,14 +7,17 @@ public static class WorkspaceSchema
     /// <summary>Additive upgrade for databases initially created by EnsureCreated.</summary>
     public static async Task EnsureWorkspaceSchemaAsync(this CoupleDbContext db)
     {
-        using var stream = typeof(WorkspaceSchema).Assembly.GetManifestResourceStream(
-            "CoupleApp.API.Data.Migrations.001_workspace.sql")
-            ?? throw new InvalidOperationException("Workspace schema resource is missing.");
-        using var reader = new StreamReader(stream);
-        var sql = await reader.ReadToEndAsync();
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(61409031)");
-        await db.Database.ExecuteSqlRawAsync(sql);
+        foreach (var name in new[] { "001_workspace.sql", "002_cycles.sql", "003_workspace_assignment_versions.sql",
+            "004_cycle_period_versions.sql" })
+        {
+            using var stream = typeof(WorkspaceSchema).Assembly.GetManifestResourceStream(
+                $"CoupleApp.API.Data.Migrations.{name}")
+                ?? throw new InvalidOperationException($"Schema resource {name} is missing.");
+            using var reader = new StreamReader(stream);
+            await db.Database.ExecuteSqlRawAsync(await reader.ReadToEndAsync());
+        }
         await transaction.CommitAsync();
     }
 }

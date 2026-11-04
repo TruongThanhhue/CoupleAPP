@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: couple-app-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: Database__InitializeSchema
+        value: "true"
+      - key: Jwt__Key
+        generateValue: true
+      - key: ConnectionStrings__CoupleDb
+        sync: false

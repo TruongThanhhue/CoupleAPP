@@ -8,9 +8,38 @@ public sealed class CoupleDbContext(DbContextOptions<CoupleDbContext> options) :
     public DbSet<PartnerInvite> PartnerInvites => Set<PartnerInvite>();
     public DbSet<WorkspaceTask> Tasks => Set<WorkspaceTask>();
     public DbSet<CalendarEvent> Events => Set<CalendarEvent>();
+    public DbSet<CycleProfile> CycleProfiles => Set<CycleProfile>();
+    public DbSet<PeriodEntry> PeriodEntries => Set<PeriodEntry>();
+    public DbSet<CyclePredictionRecord> CyclePredictions => Set<CyclePredictionRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.Entity<CycleProfile>(entity =>
+        {
+            entity.ToTable("cycle_profiles");
+            entity.HasKey(item => item.UserId);
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(item => item.SharedWithUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<PeriodEntry>(entity =>
+        {
+            entity.ToTable("period_entries");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Version).IsConcurrencyToken();
+            entity.Property(item => item.FlowLevel).HasMaxLength(16).IsRequired();
+            entity.Property(item => item.Notes).HasMaxLength(2000);
+            entity.HasIndex(item => new { item.UserId, item.StartDate }).IsUnique();
+            entity.HasOne<CycleProfile>().WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<CyclePredictionRecord>(entity =>
+        {
+            entity.ToTable("cycle_predictions");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Basis).HasMaxLength(16).IsRequired();
+            entity.Property(item => item.AlgorithmVersion).HasMaxLength(40).IsRequired();
+            entity.HasIndex(item => new { item.UserId, item.GeneratedAt });
+            entity.HasOne<CycleProfile>().WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
         builder.Entity<AppUser>(entity =>
         {
             entity.ToTable("users");
@@ -49,6 +78,9 @@ public sealed class CoupleDbContext(DbContextOptions<CoupleDbContext> options) :
             entity.Property(item => item.Notes).HasMaxLength(2000);
             entity.Property(item => item.Priority).HasMaxLength(10).IsRequired();
             entity.Property(item => item.UpdatedAt).IsConcurrencyToken();
+            entity.Property(item => item.Version).IsConcurrencyToken();
+            entity.HasIndex(item => item.AssignedToUserId);
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(item => item.AssignedToUserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(item => item.OwnerId);
             entity.HasIndex(item => item.SharedWithUserId);
             entity.HasOne<AppUser>().WithMany().HasForeignKey(item => item.OwnerId).OnDelete(DeleteBehavior.Restrict);
@@ -63,6 +95,7 @@ public sealed class CoupleDbContext(DbContextOptions<CoupleDbContext> options) :
             entity.Property(item => item.Notes).HasMaxLength(2000);
             entity.Property(item => item.Location).HasMaxLength(300);
             entity.Property(item => item.UpdatedAt).IsConcurrencyToken();
+            entity.Property(item => item.Version).IsConcurrencyToken();
             entity.HasIndex(item => item.OwnerId);
             entity.HasIndex(item => item.SharedWithUserId);
             entity.HasOne<AppUser>().WithMany().HasForeignKey(item => item.OwnerId).OnDelete(DeleteBehavior.Restrict);

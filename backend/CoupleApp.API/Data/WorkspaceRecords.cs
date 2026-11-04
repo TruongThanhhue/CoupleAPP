@@ -5,6 +5,8 @@ public sealed class WorkspaceTask
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
     public Guid? SharedWithUserId { get; set; }
+    public Guid? AssignedToUserId { get; set; }
+    public Guid Version { get; set; } = Guid.NewGuid();
     public required string Title { get; set; }
     public string? Notes { get; set; }
     public bool IsComplete { get; set; }
@@ -19,6 +21,7 @@ public sealed class CalendarEvent
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
     public Guid? SharedWithUserId { get; set; }
+    public Guid Version { get; set; } = Guid.NewGuid();
     public required string Title { get; set; }
     public string? Notes { get; set; }
     public string? Location { get; set; }

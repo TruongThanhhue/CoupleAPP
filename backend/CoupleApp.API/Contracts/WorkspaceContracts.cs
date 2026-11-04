@@ -1,16 +1,19 @@
 namespace CoupleApp.API.Contracts;
 
 public sealed record SaveTaskRequest(string? Title, string? Notes, bool IsComplete,
-    bool IsShared, string? Priority, DateTimeOffset? DueAt);
+    bool IsShared, string? Priority, DateTimeOffset? DueAt,
+    string AssignedTo = "unassigned", Guid? ExpectedVersion = null, string? ExpectedPartnerCode = null);
 public sealed record TaskResponse(Guid Id, string Title, string? Notes, bool IsComplete,
     bool IsShared, string Priority, DateTimeOffset? DueAt, DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt, bool CreatedByMe);
+    DateTimeOffset UpdatedAt, bool CreatedByMe, Guid Version,
+    string AssignedTo, bool AssignedToMe);
 
 public sealed record SaveEventRequest(string? Title, string? Notes, string? Location,
-    DateTimeOffset StartsAt, DateTimeOffset EndsAt, bool IsShared);
+    DateTimeOffset StartsAt, DateTimeOffset EndsAt, bool IsShared, Guid? ExpectedVersion = null,
+    string? ExpectedPartnerCode = null);
 public sealed record EventResponse(Guid Id, string Title, string? Notes, string? Location,
     DateTimeOffset StartsAt, DateTimeOffset EndsAt, bool IsShared,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool CreatedByMe);
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool CreatedByMe, Guid Version);
 
 public static class WorkspaceValidation
 {
@@ -19,6 +22,10 @@ public static class WorkspaceValidation
         var errors = ValidateText(request.Title, request.Notes);
         if (request.Priority is not ("low" or "normal" or "high"))
             errors["priority"] = ["Mức ưu tiên không hợp lệ."];
+        if (request.AssignedTo is not ("unassigned" or "owner" or "partner"))
+            errors["assignedTo"] = ["Người được giao không hợp lệ."];
+        if (request.AssignedTo == "partner" && !request.IsShared)
+            errors["assignedTo"] = ["Chỉ giao cho partner khi công việc được chia sẻ."];
         if (request.DueAt is { } due && !ValidDate(due))
             errors["dueAt"] = ["Hạn hoàn thành phải nằm trong khoảng năm 2000 đến 2100."];
         return errors;

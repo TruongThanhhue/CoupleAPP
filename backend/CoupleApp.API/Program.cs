@@ -70,7 +70,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:InitializeSchema"))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CoupleDbContext>();
@@ -84,6 +84,7 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).WithTags("System");
 app.MapWorkspaceEndpoints();
+app.MapCycleEndpoints();
 
 var auth = app.MapGroup("/api/v1/auth").WithTags("Authentication").RequireRateLimiting("auth");
 auth.MapPost("/register", async (RegisterRequest request, CoupleDbContext db, JwtTokenService tokens) =>
@@ -169,13 +170,21 @@ couples.MapPost("/disconnect", async (DisconnectPartnerRequest request, ClaimsPr
     user.PartnerId = null;
     partner.PartnerId = null;
     var now = DateTimeOffset.UtcNow;
+    await db.CycleProfiles.Where(item => (item.UserId == userId && item.SharedWithUserId == partnerId) ||
+        (item.UserId == partnerId && item.SharedWithUserId == userId))
+        .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.SharedWithUserId, (Guid?)null)
+            .SetProperty(item => item.Visibility, CoupleApp.Domain.Cycles.CycleVisibility.Private)
+            .SetProperty(item => item.UpdatedAt, now));
     await db.Tasks.Where(item => (item.OwnerId == userId && item.SharedWithUserId == partnerId) ||
         (item.OwnerId == partnerId && item.SharedWithUserId == userId))
         .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.SharedWithUserId, (Guid?)null)
+            .SetProperty(item => item.AssignedToUserId, item => item.AssignedToUserId == item.OwnerId ? item.AssignedToUserId : (Guid?)null)
+            .SetProperty(item => item.Version, Guid.NewGuid())
             .SetProperty(item => item.UpdatedAt, now));
     await db.Events.Where(item => (item.OwnerId == userId && item.SharedWithUserId == partnerId) ||
         (item.OwnerId == partnerId && item.SharedWithUserId == userId))
         .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.SharedWithUserId, (Guid?)null)
+            .SetProperty(item => item.Version, Guid.NewGuid())
             .SetProperty(item => item.UpdatedAt, now));
     await db.PartnerInvites.Where(invite => invite.Status == InviteStatus.Pending &&
         (invite.SenderId == userId || invite.RecipientId == userId || invite.SenderId == partnerId || invite.RecipientId == partnerId))
