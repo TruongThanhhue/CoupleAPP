@@ -10,7 +10,7 @@ public static class WorkspaceSchema
         await using var transaction = await db.Database.BeginTransactionAsync();
         await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(61409031)");
         foreach (var name in new[] { "001_workspace.sql", "002_cycles.sql", "003_workspace_assignment_versions.sql",
-            "004_cycle_period_versions.sql" })
+            "004_cycle_period_versions.sql", "005_shared_entries.sql" })
         {
             using var stream = typeof(WorkspaceSchema).Assembly.GetManifestResourceStream(
                 $"CoupleApp.API.Data.Migrations.{name}")

@@ -228,6 +228,7 @@ FROM cycle_profiles CROSS JOIN (VALUES (DATE '2020-01-01'), (DATE '2019-12-31'))
     Assert-True $true 'Cannot share before connecting a partner'
     $invite = Request 'POST' '/api/v1/couples/invites' @{ partnerCode = $b.user.partnerCode } $a.accessToken 201
     $null = Request 'POST' "/api/v1/couples/invites/$($invite.id)/accept" @{} $b.accessToken
+    . (Join-Path $repoRoot 'backend/tests/shared-books.ps1')
     $null = Request 'GET' '/api/v1/cycles/partner' -Token $b.accessToken -Expected 404
     $cycleProfile.visibility = 'partner'
     $null = Request 'PUT' '/api/v1/cycles/profile' $cycleProfile $a.accessToken 409
@@ -354,6 +355,7 @@ FROM cycle_profiles CROSS JOIN (VALUES (DATE '2020-01-01'), (DATE '2019-12-31'))
     $null = Request 'POST' '/api/v1/couples/disconnect' @{} $a.accessToken 400
     $null = Request 'POST' '/api/v1/couples/disconnect' @{ partnerCode = $c.user.partnerCode } $a.accessToken 409
     $disconnected = Request 'POST' '/api/v1/couples/disconnect' @{ partnerCode = $b.user.partnerCode } $a.accessToken
+    $null = Request 'GET' $ledgerB -Token $b.accessToken -Expected 409
     Assert-True ($null -eq $disconnected.partner -and $null -eq (Request 'GET' '/api/v1/couples/me' -Token $b.accessToken).partner) 'Disconnect clears both partner links'
     $null = Request 'GET' '/api/v1/cycles/partner' -Token $b.accessToken -Expected 404
     $cycle = Request 'GET' '/api/v1/cycles/me' -Token $a.accessToken
@@ -373,6 +375,7 @@ FROM cycle_profiles CROSS JOIN (VALUES (DATE '2020-01-01'), (DATE '2019-12-31'))
     $null = Request 'DELETE' "/api/v1/tasks/$($sharedTask.id)" -Token $b.accessToken -Expected 404
     $again = Request 'POST' '/api/v1/couples/invites' @{ partnerCode = $b.user.partnerCode } $a.accessToken 201
     $null = Request 'POST' "/api/v1/couples/invites/$($again.id)/accept" @{} $b.accessToken
+    Assert-True ((Request 'GET' $ledgerB -Token $b.accessToken).items.Count -eq 0) 'Reconnect does not restore old shared expenses'
     Assert-True (@(Request 'GET' '/api/v1/tasks' -Token $b.accessToken).Count -eq 0 -and @(Request 'GET' '/api/v1/events' -Token $b.accessToken).Count -eq 0) 'Reconnecting same partner never restores old sharing'
     $null = Request 'GET' '/api/v1/cycles/partner' -Token $b.accessToken -Expected 404
     Assert-True ((Request 'GET' '/api/v1/cycles/me' -Token $a.accessToken).visibility -eq 'private') 'Reconnecting same partner never restores cycle consent'

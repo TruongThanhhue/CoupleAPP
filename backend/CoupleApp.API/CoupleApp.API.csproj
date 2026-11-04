@@ -5,6 +5,7 @@
     <EmbeddedResource Include="Data\Migrations\002_cycles.sql" />
     <EmbeddedResource Include="Data\Migrations\003_workspace_assignment_versions.sql" />
     <EmbeddedResource Include="Data\Migrations\004_cycle_period_versions.sql" />
+    <EmbeddedResource Include="Data\Migrations\005_shared_entries.sql" />
   </ItemGroup>
 
   <ItemGroup>

@@ -85,6 +85,7 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).WithTags("System");
 app.MapWorkspaceEndpoints();
 app.MapCycleEndpoints();
+app.MapSharedEntries();
 
 var auth = app.MapGroup("/api/v1/auth").WithTags("Authentication").RequireRateLimiting("auth");
 auth.MapPost("/register", async (RegisterRequest request, CoupleDbContext db, JwtTokenService tokens) =>
@@ -169,6 +170,9 @@ couples.MapPost("/disconnect", async (DisconnectPartnerRequest request, ClaimsPr
     var partnerId = partner.Id;
     user.PartnerId = null;
     partner.PartnerId = null;
+    await db.SharedEntries.Where(e => (e.OwnerId == userId && e.RecipientId == partnerId) ||
+            (e.OwnerId == partnerId && e.RecipientId == userId))
+        .ExecuteUpdateAsync(set => set.SetProperty(e => e.RecipientId, (Guid?)null));
     var now = DateTimeOffset.UtcNow;
     await db.CycleProfiles.Where(item => (item.UserId == userId && item.SharedWithUserId == partnerId) ||
         (item.UserId == partnerId && item.SharedWithUserId == userId))

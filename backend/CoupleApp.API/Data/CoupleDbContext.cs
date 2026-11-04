@@ -5,6 +5,7 @@ namespace CoupleApp.API.Data;
 public sealed class CoupleDbContext(DbContextOptions<CoupleDbContext> options) : DbContext(options)
 {
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<SharedEntry> SharedEntries => Set<SharedEntry>();
     public DbSet<PartnerInvite> PartnerInvites => Set<PartnerInvite>();
     public DbSet<WorkspaceTask> Tasks => Set<WorkspaceTask>();
     public DbSet<CalendarEvent> Events => Set<CalendarEvent>();
@@ -14,6 +15,13 @@ public sealed class CoupleDbContext(DbContextOptions<CoupleDbContext> options) :
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.Entity<SharedEntry>(entity =>
+        {
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(e => e.OwnerId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(e => e.RecipientId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(e => e.PayerId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new {e.OwnerId, e.RecipientId, e.Kind, e.Day}).HasDatabaseName("shared_entries_pair_month");
+        });
         builder.Entity<CycleProfile>(entity =>
         {
             entity.ToTable("cycle_profiles");
